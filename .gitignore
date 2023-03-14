@@ -1,0 +1,7 @@
+*.txt 
+*.exe 
+*.so 
+*.json 
+*.o results 
+.vscode 
+*.a
