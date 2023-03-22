@@ -5,8 +5,8 @@
 #include <sys/stat.h>
 
 int main(){
-    char dir_name[1024]="";
-    getcwd(dir_name, sizeof(dir_name));
+    char dir_name[1024]="/home/szymon/Pulpit/studia/sysopy/cw02";
+    // getcwd(dir_name, sizeof(dir_name));
     struct dirent* file;
     struct stat stats;
     long long total_size = 0;

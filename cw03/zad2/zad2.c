@@ -10,6 +10,6 @@ int main(int argc, char*argv[]){
     char* dirpath = argv[1];
     printf("%s",dirpath);
     fflush(stdout);
-    execl("/bin/ls","/bin/ls",dirpath,NULL);
+    execl("/bin/ls","ls",dirpath,NULL);
     return 0;
 }
