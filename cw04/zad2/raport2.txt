@@ -1,0 +1,31 @@
+SIGUSR1 sent with SA_SIGINFO
+Signal number: 10
+Signal code 0
+Sending process ID 10997
+Real user ID of sending process 1000
+User time consumed 0
+System time consumed 0
+
+////////////////////////////////////////////
+Child stopped without SA_NOCLDSTOP
+Signal :), PID: 10997 
+Child killed without SA_NOCLDSTOP
+Signal :), PID: 10997 
+
+Child stopped with SA_NOCLDSTOP
+Child killed with SA_NOCLDSTOP
+Signal :), PID: 10997 
+
+//flaga SA_NOCLDSTOP zapobiega wysyłaniu sygnału SIGCHLD gdy proces potomny jest zatrzymywany
+////////////////////////////////////////////
+SIGUSR1 sent first time no resethand flag
+Signal :), PID: 10997 
+SIGUSR1 sent second time no resethand flag
+Signal :), PID: 10997 
+SIGUSR1 sent first time resethand flag
+Signal :), PID: 10997 
+SIGUSR1 sent second time resethand flag
+Sygnał użytkownika 1
+
+//flaga SA_RESETHAND po pierwszym użyciu customowego handlera przywraca domyślny
+////////////////////////////////////////////
