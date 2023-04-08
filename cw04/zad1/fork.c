@@ -20,7 +20,7 @@ int main(){
     char* line;
     size_t len;
     enum command cmd;
-    size_t child;
+    size_t child;    
 
     while (1)
     {
@@ -80,6 +80,8 @@ void action(enum command cmd){
         signal(10,SIG_IGN);
         break;
     case HANDLER:
+        sigemptyset(&mask);
+        sigprocmask(SIG_SETMASK,&mask,NULL);
         printf("\nHandler activated\n");
         signal(10,handler);
         break;
