@@ -5,11 +5,12 @@
 #include <sys/msg.h>
 #include <signal.h>
 #include<string.h>
+#include<time.h>
 
 #define SERVER_ID 1
 #define CLIENTS 5
 #define MAX_LENGTH 255
-#define S
+
 
 
 typedef struct msgbuf
@@ -18,6 +19,7 @@ typedef struct msgbuf
     key_t key;
     int client_id;
     int other_id;
+    struct tm time;
     char content[MAX_LENGTH];
 } msgbuf;
 
@@ -29,4 +31,4 @@ typedef enum cmd{
     LIST,
     INVALID    
 } cmd;
-const int MSG_SIZE = sizeof(msgbuf);
+const int MSG_SIZE = sizeof(msgbuf)-sizeof(long);

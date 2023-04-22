@@ -11,7 +11,7 @@ void handle_all(msgbuf msg);
 void handle_one(msgbuf msg);
 void handle_stop(msgbuf msg);
 void SIGINT_handler(int n);
-
+void save_log(msgbuf msg);
 
 int main(){
 
@@ -43,7 +43,7 @@ int main(){
   	    // num_msg = msglist.msg_qnum;		
         // // if (num_msg == 0) continue;
        
-        msgrcv(s_id, (void *) &msg, sizeof(msgbuf),-6, 0);
+        msgrcv(s_id, (void *) &msg, MSG_SIZE,-6, 0);
 
         switch (msg.mtype) {
             case INIT:
@@ -90,9 +90,9 @@ void handle_init(msgbuf msg){
     }
     fflush(NULL);
     int c_id = msgget(msg.key, 0);
-    msgsnd(c_id, (void *) &msg, sizeof(msgbuf), 0);
+    msgsnd(c_id, (void *) &msg, MSG_SIZE, 0);
     // printf("%d\n",msg.key);
-
+    save_log(msg);
     
 }
 void handle_list(msgbuf msg){
@@ -108,7 +108,8 @@ void handle_list(msgbuf msg){
     }
 
     strcpy(msg.content, list);
-    msgsnd(c_id,&msg, sizeof(msgbuf), 0);
+    msgsnd(c_id,&msg, MSG_SIZE, 0);
+    save_log(msg);
     
 }
 void handle_all(msgbuf msg){
@@ -116,20 +117,22 @@ void handle_all(msgbuf msg){
     for(int i=0; i<CLIENTS; i++){
         if(clients[i]!=-1 && i!=msg.client_id){
             int other_id = msgget(clients[i],0);
-            msgsnd(other_id, &msg, sizeof(msgbuf),0);
+            msgsnd(other_id, &msg, MSG_SIZE,0);
         }
+        save_log(msg);
     }
 }
 void handle_one(msgbuf msg){
     printf("2ONE\n");
     if(clients[msg.other_id]!=-1 ){
         int other_id = msgget(clients[msg.other_id],0);
-        msgsnd(other_id, &msg, sizeof(msgbuf),0);
+        msgsnd(other_id, &msg, MSG_SIZE,0);
     }
     // if(clients[msg.other_id] != -1){
     //     int c_id = msgget(clients[msg.other_id],0);
-    //     msgsnd(c_id, &msg, sizeof(msgbuf),0);
+    //     msgsnd(c_id, &msg, MSG_SIZE,0);
     // }
+    save_log(msg);
 }
 void handle_stop( msgbuf msg){
 
@@ -137,6 +140,7 @@ void handle_stop( msgbuf msg){
     if( msg.client_id < next_client){
         next_client = msg.client_id;
     }
+    save_log(msg);
 }
 
 void SIGINT_handler(int n){
@@ -153,4 +157,39 @@ void SIGINT_handler(int n){
         perror("msgctl error");
     };
     exit(0);
+}
+
+void save_log(msgbuf msg) {
+    FILE *log_file = fopen("logs.txt", "a");
+
+    switch (msg.mtype) {
+        case INIT:
+            if (msg.client_id == -1) {
+                fprintf(log_file, "(INIT) Max number of clients is reached!\n");
+            } else {
+                fprintf(log_file, "(INIT) Client ID: %d\n", msg.client_id);
+            }
+            break;
+        case LIST:
+            fprintf(log_file, "(LIST) Client ID: %d\n", msg.client_id);
+            break;
+        case ALL:
+            fprintf(log_file, "Message: %s\n", msg.content);
+            fprintf(log_file, "(2ALL) Client ID: %d\n", msg.client_id);
+            break;
+        case ONE:
+            fprintf(log_file, "Message: %s\n", msg.content);
+            fprintf(log_file, "(2ONE) Sender ID: %d, Receiver ID %d\n", msg.client_id, msg.other_id);
+            break;
+        case STOP:
+            fprintf(log_file, "(STOP) Client ID: %d\n", msg.client_id);
+            break;
+    }
+
+    fprintf(log_file, "sent at: %02d:%02d:%02d\n\n\n",
+            msg.time.tm_hour,
+            msg.time.tm_min,
+            msg.time.tm_sec);
+
+    fclose(log_file);
 }

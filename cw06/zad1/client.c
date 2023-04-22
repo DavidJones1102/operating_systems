@@ -8,10 +8,9 @@ void receive_msg();
 void handle_stop();
 void handle_one(int other_id, char* str);
 void handle_all(char* str);
-void check_and_run( char** words);
-void execute(cmd to_exec, char** parameters);
-char** split_line(char* line);
+void execute( char* line);
 char* read_line();
+void fill_time(msgbuf* msg);
 int is_number(char* str);
 cmd convert(char* str);
 
@@ -30,7 +29,7 @@ int main(){
     s_key = ftok(getenv("HOME"), SERVER_ID); //error handling 
     c_id = msgget(c_key, IPC_CREAT| 0666);
     s_id = msgget(s_key, 0);
-    // printf("%d \n", s_id);
+
     signal(SIGINT, handle_stop);
     client_id = handle_init();
     char* line = NULL;
@@ -41,8 +40,7 @@ int main(){
     {
         printf(">>> ");
         line = read_line();
-        words = split_line(line);
-        check_and_run(words);
+        execute(line);
     }
 
     while (child == 0)
@@ -58,10 +56,10 @@ int main(){
 int handle_init(){
     printf("INIT \n");
     msgbuf msg;
+    fill_time(&msg);
     msg.mtype = INIT;
     msg.key = c_key;
-    // msg.other_id = -1;
-    printf("%d",msg.key);
+
     msgsnd(s_id, (void *) &msg, MSG_SIZE, 0);
     msgrcv(c_id, (void *) &msg, MSG_SIZE, 0, 0);
 
@@ -74,21 +72,19 @@ int handle_init(){
     return msg.client_id;
 }
 void handle_list(){
-    // printf("LIST \n");
     msgbuf msg;
+    fill_time(&msg);
     msg.mtype = LIST;
     msg.key = c_key;
     msg.client_id = client_id;
 
     msgsnd(s_id, (void *) &msg, MSG_SIZE, 0);
-    msgrcv(c_id, (void *) &msg, MSG_SIZE, 0, 0);
 
-    printf("Clients %s \n", msg.content);
-    fflush(NULL);
 }
 
 void handle_one(int other_id, char* str){
     msgbuf msg;
+    fill_time(&msg);
     msg.client_id = client_id;
     msg.other_id = other_id;
     msg.mtype = ONE;
@@ -98,6 +94,7 @@ void handle_one(int other_id, char* str){
 void handle_all(char* str){
 
     msgbuf msg;
+    fill_time(&msg);
     msg.client_id = client_id;
     msg.mtype = ALL;
     strcpy(msg.content, str );
@@ -106,6 +103,7 @@ void handle_all(char* str){
 void handle_stop(){
     printf("STOP \n");
     msgbuf msg;
+    fill_time(&msg);
     msg.mtype = STOP;
     msg.key = c_key;
     msg.client_id = client_id;
@@ -120,31 +118,60 @@ void handle_stop(){
 
 void receive_msg(){
     msgbuf msg;
-    msgrcv(c_id, &msg, MSG_SIZE,-4,0);
-    // while (msgrcv(c_id, &msg, MSG_SIZE, 0, IPC_NOWAIT) >= 0) {
+    msgrcv(c_id, &msg, MSG_SIZE,-5,0);
 
     if (msg.mtype == STOP) {
         printf("\nReceived stop message, leaving..\n");
         handle_stop();
     } else if(msg.mtype != LIST){
-        
-        printf("\nMsg from: %d \n%s \n", msg.client_id, msg.content);
+        printf("\nTime - %02d:%02d:%02d: ",msg.time.tm_hour,msg.time.tm_min,msg.time.tm_sec);
+        printf("Msg from: %d \n%s \n", msg.client_id, msg.content);
         printf(">>>");
     }
-        // }
+    else{
+        printf("Clients %s \n", msg.content);
+    }
+      
     fflush(NULL);
 }
-void execute(cmd to_exec, char** parameters){
-    switch (to_exec)
+void fill_time(msgbuf* msg){
+    time_t curr_time = time(NULL);
+    msg->time=*localtime(&curr_time);
+}
+void execute(char* line){
+    if(strcmp(line,"\n") == 0){
+        return;
+    }
+    char* first = strtok(line, " \n");
+    char* second;
+    char* third;
+    cmd command = convert(first);
+
+    switch (command)
     {
     case LIST:
         handle_list();
         break;
     case ALL:
-        handle_all(parameters[1]);
+        second = strtok(NULL,"\n");
+        handle_all(second);
         break;
     case ONE:
-        handle_one(atoi(parameters[1]), parameters[2]);
+        second = strtok(NULL," ");
+        if( second == NULL){
+            perror("Too few arguments\n");
+            return;
+        }
+        if( is_number(second)!=1){
+            perror("Wrong client id\n");
+            return;
+        }
+        third = strtok(NULL, "\n");
+        if( third == NULL){
+            perror("Too few arguments\n");
+            return;
+        }
+        handle_one(atoi(second), third);
         break;
     case STOP:
         handle_stop();
@@ -153,45 +180,6 @@ void execute(cmd to_exec, char** parameters){
         perror("Invalid command\n");
         break;
     }
-
-}
-
-void check_and_run(char** words){
-    int count = 0;
-    while (words[count]!=NULL)
-    {
-        count++;
-    }
-    
-    if(count <= 0){
-        return;
-    }
-
-    cmd command = convert(words[0]);
-
-    if( command == STOP && count!=1 ){
-        perror("STOP don't take addintional arguments");
-        return;
-    }
-    else if( command == LIST && count!=1 ){
-        perror("LIST don't take addintional arguments");
-        return;
-    }
-    else if( command == ALL && count!=2 ){
-        perror("2ALL takes 1 argument");
-        return;
-    }
-    else if(command == ONE && (count!=3 || is_number(words[1])!=1)){
-        perror("2ONE takes 2 arguments int and string");
-        return;
-    }
-    else if(command == INVALID){
-        perror("Invalid command\n");
-        return;
-    }
-
-    execute(command, words);
-    
 }
 
 cmd convert(char* str){
@@ -236,26 +224,4 @@ char* read_line(){
     return buff;
 }
 
-char** split_line(char* line){
-    char **tokens = malloc(MAX_LENGTH*sizeof(char*));
-    char* token;
-    size_t position = 0;
-
-    if(tokens == NULL){
-        fprintf(stderr, "Allocation error\n");
-        exit(1);
-    }
-
-    token = strtok(line, " \t\r\n\a");
-
-    while (token!=NULL)
-    {
-        tokens[position] = token;
-        position++;
-        
-        token = strtok(NULL, " \t\r\n\a");
-    }
-    tokens[position]=NULL;
-    return tokens;
-}
 
