@@ -8,7 +8,8 @@
 
 #define SERVER_ID 1
 #define CLIENTS 5
-#define MAX_LENGTH 512
+#define MAX_LENGTH 255
+#define S
 
 
 typedef struct msgbuf
@@ -16,15 +17,16 @@ typedef struct msgbuf
     long mtype;
     key_t key;
     int client_id;
-    // int other_id;
+    int other_id;
     char content[MAX_LENGTH];
 } msgbuf;
 
 typedef enum cmd{
     INIT=1,
-    LIST,
     ONE,
     ALL,
     STOP,
+    LIST,
     INVALID    
 } cmd;
+const int MSG_SIZE = sizeof(msgbuf);

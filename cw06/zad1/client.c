@@ -40,7 +40,6 @@ int main(){
     while (child != 0)
     {
         printf(">>> ");
-    // //     // receive_msg();
         line = read_line();
         words = split_line(line);
         check_and_run(words);
@@ -61,9 +60,10 @@ int handle_init(){
     msgbuf msg;
     msg.mtype = INIT;
     msg.key = c_key;
+    // msg.other_id = -1;
     printf("%d",msg.key);
-    msgsnd(s_id, (void *) &msg, sizeof(msgbuf), 0);
-    msgrcv(c_id, (void *) &msg, sizeof(msgbuf), 0, 0);
+    msgsnd(s_id, (void *) &msg, MSG_SIZE, 0);
+    msgrcv(c_id, (void *) &msg, MSG_SIZE, 0, 0);
 
     if( msg.client_id == -1){
         perror("Client limit exceeded");
@@ -80,18 +80,20 @@ void handle_list(){
     msg.key = c_key;
     msg.client_id = client_id;
 
-    msgsnd(s_id, (void *) &msg, sizeof(msgbuf), 0);
-    msgrcv(c_id, (void *) &msg, sizeof(msgbuf), 0, 0);
+    msgsnd(s_id, (void *) &msg, MSG_SIZE, 0);
+    msgrcv(c_id, (void *) &msg, MSG_SIZE, 0, 0);
 
     printf("Clients %s \n", msg.content);
+    fflush(NULL);
 }
 
 void handle_one(int other_id, char* str){
-    // msgbuf msg;
-    // msg.client_id = client_id;
-    // msg.other_id = other_id;
-    // strcpy(msg.content, str );
-    // msgsnd(s_id, &msg, sizeof(msgbuf),0);
+    msgbuf msg;
+    msg.client_id = client_id;
+    msg.other_id = other_id;
+    msg.mtype = ONE;
+    strcpy(msg.content, str );
+    msgsnd(s_id, &msg, MSG_SIZE,0);
 }
 void handle_all(char* str){
 
@@ -99,17 +101,18 @@ void handle_all(char* str){
     msg.client_id = client_id;
     msg.mtype = ALL;
     strcpy(msg.content, str );
-    msgsnd(s_id, &msg, sizeof(msgbuf),0);
+    msgsnd(s_id, &msg, MSG_SIZE,0);
 }
 void handle_stop(){
     printf("STOP \n");
     msgbuf msg;
     msg.mtype = STOP;
     msg.key = c_key;
+    msg.client_id = client_id;
     if(getpid()!= child){
         kill(child, SIGKILL);
     }
-    msgsnd(s_id, &msg, sizeof(msgbuf), 0);
+    msgsnd(s_id, &msg, MSG_SIZE, 0);
     msgctl(c_id, IPC_RMID, NULL);
     exit(0);
 
@@ -117,16 +120,16 @@ void handle_stop(){
 
 void receive_msg(){
     msgbuf msg;
-    printf(":C");
-    msgrcv(c_id, &msg, sizeof(msgbuf),0,0);
-    // while (msgrcv(c_id, &msg, sizeof(msgbuf), 0, IPC_NOWAIT) >= 0) {
-    printf("\nmsg!!\n");
+    msgrcv(c_id, &msg, MSG_SIZE,-4,0);
+    // while (msgrcv(c_id, &msg, MSG_SIZE, 0, IPC_NOWAIT) >= 0) {
+
     if (msg.mtype == STOP) {
-        printf("Received stop message, leaving..\n");
+        printf("\nReceived stop message, leaving..\n");
         handle_stop();
-    } else {
+    } else if(msg.mtype != LIST){
         
-        printf("Msg from: %d \n%s \n", msg.client_id, msg.content);
+        printf("\nMsg from: %d \n%s \n", msg.client_id, msg.content);
+        printf(">>>");
     }
         // }
     fflush(NULL);
