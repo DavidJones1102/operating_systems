@@ -91,6 +91,7 @@ int main(int argc, char* argv[]){
     printf("Time taken: %lds %ldns\n", out.tv_sec, out.tv_nsec);
     close(fifo);
     system("rm -f fifo");
+
     
     return 0;
 }

@@ -4,3 +4,5 @@ all:
 test: all
 	./zad3.exe 0.000000001 1
 	./zad3.exe 0.000000001 10
+clear:
+	rm -f *.exe
