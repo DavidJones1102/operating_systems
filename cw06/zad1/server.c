@@ -39,10 +39,7 @@ int main(){
 
     while (1)
     {
-        // msgctl(s_id,IPC_STAT,&msglist);                      //sense the message queue
-  	    // num_msg = msglist.msg_qnum;		
-        // // if (num_msg == 0) continue;
-       
+    
         msgrcv(s_id, (void *) &msg, MSG_SIZE,-6, 0);
 
         switch (msg.mtype) {
@@ -51,19 +48,19 @@ int main(){
                 break;
             case LIST:
                 handle_list(msg);
-                // store_message_logs(msg);
+             
                 break;
             case ALL:
                 handle_all(msg);
-                // store_message_logs(msg);
+             
                 break;
             case ONE:
                 handle_one(msg);
-                // store_message_logs(msg);
+             
                 break;
             case STOP:
                 handle_stop( msg );
-                // store_message_logs(msg);
+             
                 break;
             default:
                 printf("Unexpected message type!\n");
@@ -81,7 +78,7 @@ void handle_init(msgbuf msg){
     }
     
     if( next_client < CLIENTS){
-        msg.client_id = next_client; //yyy??
+        msg.client_id = next_client; 
         clients[next_client] = msg.key;
         next_client++;
     }
@@ -128,10 +125,7 @@ void handle_one(msgbuf msg){
         int other_id = msgget(clients[msg.other_id],0);
         msgsnd(other_id, &msg, MSG_SIZE,0);
     }
-    // if(clients[msg.other_id] != -1){
-    //     int c_id = msgget(clients[msg.other_id],0);
-    //     msgsnd(c_id, &msg, MSG_SIZE,0);
-    // }
+
     save_log(msg);
 }
 void handle_stop( msgbuf msg){

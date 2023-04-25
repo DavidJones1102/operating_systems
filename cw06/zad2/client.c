@@ -14,22 +14,25 @@ void fill_time(msgbuf* msg);
 int is_number(char* str);
 cmd convert(char* str);
 void send(cmd type, char* content, int other_id);
+char randomC();
+mqd_t create_queue(const char* name);
+void get_name();
+char* to_string(cmd command);
 
-key_t c_key;
-key_t s_key;
-int c_id;
-int s_id;
 int client_id;
 pid_t child;
+char name[LEN];
+mqd_t c_queue;
+mqd_t s_queue;
+
 
 int main(){
-
-    
-    c_key = ftok(getenv("HOME"), getpid()); // zmienić
-    s_key = ftok(getenv("HOME"), SERVER_ID); //error handling 
-    c_id = msgget(c_key, IPC_CREAT| 0666);
-    s_id = msgget(s_key, 0);
-
+    srand(time(NULL));
+    get_name();
+    s_queue = mq_open(SERVER, O_RDWR);
+    c_queue = create_queue(name);
+        printf("c %d \n",c_queue);
+        printf("s %d \n",s_queue);
     signal(SIGINT, handle_stop);
     client_id = handle_init();
     char* line = NULL;
@@ -45,7 +48,7 @@ int main(){
 
     while (child == 0)
     {
-        receive_msg();
+        // receive_msg();
     }
     
 
@@ -54,29 +57,27 @@ int main(){
     return 0;
 }
 void send(cmd type, char* content, int other_id){
-    msgbuf msg;
-    msg.client_id = client_id;
-    msg.other_id = other_id;
-    msg.mtype = type;
-    msg.key = c_key;
-    fill_time(&msg);
-    strcpy(msg.content, content);
-    msgsnd(s_id, (void *) &msg, MSG_SIZE, 0);
+    char msg[MAX_LENGTH];
+    sprintf(msg, "%s %d %d %s \n",to_string(type), client_id, other_id, content);
+    printf("msg %s \n",msg);
+    mq_send(s_queue, msg, MSG_SIZE, 0);
 }
 int handle_init(){
     printf("INIT \n");
-    msgbuf msg;
+    char msg[6];
 
-    send(INIT,"",-1);
-    msgrcv(c_id, (void *) &msg, MSG_SIZE, 0, 0);
-
-    if( msg.client_id == -1){
+    send(INIT,name,-1);
+    mq_receive(c_queue,msg, sizeof(char)*7, NULL);
+    printf("INIT2 %s-\n",msg);
+    fflush(NULL);
+    int id = atoi(msg);
+    if( id == -1){
         perror("Client limit exceeded");
         handle_stop();
         exit(0);
     }
-    printf("Client id %d \n", msg.client_id);
-    return msg.client_id;
+    printf("Client id %d \n", id);
+    return id;
 }
 void handle_list(){
     send(LIST, "",-1);
@@ -94,24 +95,35 @@ void handle_stop(){
         kill(child, SIGKILL);
     }
     send(STOP,"",-1);
-    msgctl(c_id, IPC_RMID, NULL);
+    mq_close(c_queue);
+    mq_unlink(name);
     exit(0);
 }
 
 void receive_msg(){
-    msgbuf msg;
-    msgrcv(c_id, &msg, MSG_SIZE,-5,0);
-
-    if (msg.mtype == STOP) {
+    char msg[MAX_LENGTH];
+    mq_receive(s_queue,msg,MSG_SIZE,NULL);
+    char* first = strtok(msg, " \n");
+    cmd command;
+    char* second;
+    char* content;
+    if( first!= NULL){
+        command = convert(first);
+        second = strtok(NULL," \n");                 
+    }
+    if(second != NULL){
+        content = strtok(NULL, "\n");
+    }
+    
+    if (command == STOP) {
         printf("\nReceived stop message, leaving..\n");
         handle_stop();
-    } else if(msg.mtype != LIST){
-        printf("\nTime - %02d:%02d:%02d: ",msg.time.tm_hour,msg.time.tm_min,msg.time.tm_sec);
-        printf("Msg from: %d \n%s \n", msg.client_id, msg.content);
+    } else if(command != LIST){
+        printf("Msg from: %s \n%s \n", second, content);
         printf(">>>");
     }
     else{
-        printf("Clients %s \n", msg.content);
+        printf("Clients %s \n", content);
     }
       
     fflush(NULL);
@@ -184,7 +196,26 @@ cmd convert(char* str){
         return INVALID;
     }
 }
-
+char* to_string(cmd command){
+    switch (command)
+    {
+    case INIT:
+        return "INIT";
+        break;
+    case LIST: 
+        return "LIST";
+        break;
+    case STOP:
+        return "STOP";
+        break;
+    case ALL:
+        return "ALL";
+        break;
+    case ONE:
+        return "ONE";
+        break;
+    }
+}
 int is_number(char* str){
     int length = strlen(str);
     for (int i=0;i<length; i++)
@@ -206,4 +237,25 @@ char* read_line(){
     return buff;
 }
 
+char randomC() {
+    return rand() % ('Z' - 'A' + 1) + 'A';
+}
 
+mqd_t create_queue(const char* name) {
+    struct mq_attr attr;
+    attr.mq_flags = 0;
+    attr.mq_maxmsg = CLIENTS;
+    attr.mq_msgsize = MSG_SIZE;
+    attr.mq_curmsgs = 0;
+    return mq_open(name, O_RDWR | O_CREAT, 0666, &attr);
+}
+void get_name() {
+    char temp[LEN];
+    temp[0] = '/';
+
+    for (int i = 1; i < LEN; i++) {
+        temp[i] = randomC();
+    }
+    strcpy(name,temp);
+    printf("n %s\n",name);
+}

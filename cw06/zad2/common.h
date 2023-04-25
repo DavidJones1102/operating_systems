@@ -10,16 +10,15 @@
 #include <sys/types.h>
 #include <sys/ipc.h>
 #include <sys/msg.h>
-#define SERVER_ID 1
+#define SERVER "/SERVER"
 #define CLIENTS 5
 #define MAX_LENGTH 255
-
+#define LEN 10
 
 
 typedef struct msgbuf
 {
     long mtype;
-    key_t key;
     int client_id;
     int other_id;
     struct tm time;
@@ -35,7 +34,7 @@ typedef enum cmd{
     INVALID    
 } cmd;
 
-const int MSG_SIZE = sizeof(msgbuf)-sizeof(long);
+const int MSG_SIZE = sizeof(char)*MAX_LENGTH;
 
 // mqd_t create_queue(const char* name) {
 //     struct mq_attr attr;
