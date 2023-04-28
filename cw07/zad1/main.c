@@ -22,12 +22,12 @@ int main(){
     {
         spawn(i,BARBER_EXE);
     }
-    // printf("b %d c %d ch %d q %d s %d\n",semctl(sem,0,GETVAL),semctl(sem,1,GETVAL),semctl(sem,2,GETVAL),semctl(sem,3,GETVAL),semctl(sem,4,GETVAL));
+    
     for(int i=0; i<CLIENTS_SIZE ;i++)
     {
         spawn(i,CLIENT_EXE);
     }
-    // printf("b %d c %d ch %d q %d s %d\n",semctl(sem,0,GETVAL),semctl(sem,1,GETVAL),semctl(sem,2,GETVAL),semctl(sem,3,GETVAL),semctl(sem,4,GETVAL));
+    
     while (1)
     {
     }
@@ -44,13 +44,11 @@ void print_time(){
     printf("%s",asctime(timeinfo));
 }
 void create_sem(){
-    sem = semget(ftok("/",SEM_ID),5,IPC_CREAT|0666);
-    unsigned short array[] = {0,0,CHAIRS_SIZE,QUEUE_SIZE,1};
+    sem = semget(ftok("/",SEM_ID),SEM_SIZE,IPC_CREAT|0666);
+    unsigned short array[] = {0,0,CHAIRS_SIZE,QUEUE_SIZE,1,0};
     union semun arg;
     arg.array = array;
     semctl(sem, -1, SETALL, arg); // second argument is ignored
-
-    // printf("b %d c %d ch %d q %d\n",semctl(sem,0,GETVAL),semctl(sem,1,GETVAL),semctl(sem,2,GETVAL),semctl(sem,3,GETVAL));
 }
 void spawn(int n, char* exe){
     pid_t child = fork();
