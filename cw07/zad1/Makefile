@@ -7,3 +7,5 @@ barber:
 	${CC} barber.c -o barber.exe
 client:
 	${CC} client.c -o client.exe
+clean:
+	rm -f *.exe

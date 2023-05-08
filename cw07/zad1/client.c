@@ -1,5 +1,5 @@
 #include "common.h"
-void open_sem();
+
 void spawn_client(int sem);
 void attach_mem();
 void dettach_mem();
