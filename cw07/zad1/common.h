@@ -11,7 +11,7 @@
 #include <signal.h>
 
 #define BARBERS_SIZE 7
-#define CLIENTS_SIZE 19
+#define CLIENTS_SIZE 10
 #define CHAIRS_SIZE 5
 #define QUEUE_SIZE 10 
 

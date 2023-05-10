@@ -1,5 +1,5 @@
 #include "common.h"
-
+#include<curses.h>
 void start_service();
 void end_service();
 void spawn_barber();

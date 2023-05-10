@@ -16,11 +16,11 @@ int main(int arg, char* argv[]){
     open_sem();
 
     strcpy(hair, gen_haircut());
-    attach_mem(); //!!
+    attach_mem(); //
     client_nr = atoi(argv[1]);
 
     spawn_client();
-    dettach_mem(); //!!
+    dettach_mem(); //
     free(sem);
     return 0;
 }
