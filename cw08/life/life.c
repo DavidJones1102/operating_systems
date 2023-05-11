@@ -29,10 +29,10 @@ int main()
 	while (true)
 	{
 		draw_grid(foreground);
-		usleep(500 * 1000);
 
 		// Step simulation
 		update_grid(threads);
+		usleep(500 * 1000);
 		tmp = foreground;
 		foreground = background;
 		background = tmp;
